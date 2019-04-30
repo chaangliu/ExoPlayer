@@ -76,8 +76,9 @@
         <category android:name="android.intent.category.DEFAULT"/>
       </intent-filter>
     </activity>
+      <activity android:name=".PlayerActivityUntouched" />
 
-    <service android:name="com.google.android.exoplayer2.demo.DemoDownloadService"
+      <service android:name="com.google.android.exoplayer2.demo.DemoDownloadService"
         android:exported="false">
       <intent-filter>
         <action android:name="com.google.android.exoplayer.downloadService.action.RESTART"/>

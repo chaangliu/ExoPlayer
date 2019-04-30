@@ -23,7 +23,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.util.DisplayMetrics;
 import android.util.Pair;
 import android.view.KeyEvent;
 import android.view.View;
@@ -71,7 +70,6 @@ import com.google.android.exoplayer2.trackselection.MappingTrackSelector.MappedT
 import com.google.android.exoplayer2.trackselection.RandomTrackSelection;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
-import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 import com.google.android.exoplayer2.ui.DebugTextViewHelper;
 import com.google.android.exoplayer2.ui.PlayerControlView;
 import com.google.android.exoplayer2.ui.PlayerView;
@@ -81,9 +79,7 @@ import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
 import com.google.android.exoplayer2.util.ErrorMessageProvider;
 import com.google.android.exoplayer2.util.EventLogger;
-import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.Util;
-import com.google.android.exoplayer2.video.VideoListener;
 
 import java.lang.reflect.Constructor;
 import java.net.CookieHandler;
@@ -95,7 +91,7 @@ import java.util.UUID;
 /**
  * An activity that plays media using {@link SimpleExoPlayer}.
  */
-public class PlayerActivity extends Activity
+public class PlayerActivityUntouched extends Activity
         implements OnClickListener, PlaybackPreparer, PlayerControlView.VisibilityListener {
 
     public static final String DRM_SCHEME_EXTRA = "drm_scheme";
@@ -211,21 +207,7 @@ public class PlayerActivity extends Activity
             clearStartPosition();
         }
 
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        int screenHeight = displayMetrics.heightPixels;
-        int screenWidth = displayMetrics.widthPixels;
-
-//        playerView.setAspectRatioListener(new AspectRatioFrameLayout.AspectRatioListener() {
-//            @Override
-//            public void onAspectRatioUpdated(float targetAspectRatio, float naturalAspectRatio, boolean aspectRatioMismatch) {
-//                System.out.print("pixelAspectRatio is " + targetAspectRatio);
-//                System.out.print("naturalAspectRatio is " + naturalAspectRatio);
-//                System.out.print("aspectRatioMismatch is " + aspectRatioMismatch);
-//            }
-//        });
-
-        playerView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (screenWidth / 16 * 9)));
+        playerView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 100));
     }
 
     @Override
@@ -324,24 +306,24 @@ public class PlayerActivity extends Activity
 
     @Override
     public void onClick(View view) {
-//        if (view.getParent() == debugRootView) {
-//            MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
-//            if (mappedTrackInfo != null) {
-//                CharSequence title = ((Button) view).getText();
-//                int rendererIndex = (int) view.getTag();
-//                int rendererType = mappedTrackInfo.getRendererType(rendererIndex);
-//                boolean allowAdaptiveSelections =
-//                        rendererType == C.TRACK_TYPE_VIDEO
-//                                || (rendererType == C.TRACK_TYPE_AUDIO
-//                                && mappedTrackInfo.getTypeSupport(C.TRACK_TYPE_VIDEO)
-//                                == MappedTrackInfo.RENDERER_SUPPORT_NO_TRACKS);
-//                Pair<AlertDialog, TrackSelectionView> dialogPair =
-//                        TrackSelectionView.getDialog(this, title, trackSelector, rendererIndex);
-//                dialogPair.second.setShowDisableOption(true);
-//                dialogPair.second.setAllowAdaptiveSelections(allowAdaptiveSelections);
-//                dialogPair.first.show();
-//            }
-//        }
+        if (view.getParent() == debugRootView) {
+            MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+            if (mappedTrackInfo != null) {
+                CharSequence title = ((Button) view).getText();
+                int rendererIndex = (int) view.getTag();
+                int rendererType = mappedTrackInfo.getRendererType(rendererIndex);
+                boolean allowAdaptiveSelections =
+                        rendererType == C.TRACK_TYPE_VIDEO
+                                || (rendererType == C.TRACK_TYPE_AUDIO
+                                && mappedTrackInfo.getTypeSupport(C.TRACK_TYPE_VIDEO)
+                                == MappedTrackInfo.RENDERER_SUPPORT_NO_TRACKS);
+                Pair<AlertDialog, TrackSelectionView> dialogPair =
+                        TrackSelectionView.getDialog(this, title, trackSelector, rendererIndex);
+                dialogPair.second.setShowDisableOption(true);
+                dialogPair.second.setAllowAdaptiveSelections(allowAdaptiveSelections);
+                dialogPair.first.show();
+            }
+        }
     }
 
     // PlaybackControlView.PlaybackPreparer implementation
@@ -355,9 +337,7 @@ public class PlayerActivity extends Activity
 
     @Override
     public void onVisibilityChange(int visibility) {
-//        debugRootView.setVisibility(visibility);
-        //调试信息
-        debugRootView.setVisibility(View.GONE);
+        debugRootView.setVisibility(visibility);
     }
 
     // Internal methods
@@ -458,27 +438,10 @@ public class PlayerActivity extends Activity
                     ExoPlayerFactory.newSimpleInstance(
                             /* context= */ this, renderersFactory, trackSelector, drmSessionManager);
             player.addListener(new PlayerEventListener());
-            player.addVideoListener(new VideoListener() {
-                @Override
-                public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
-                    Log.d("ccc", "onVideoSizeChanged>>> width is " + width + ">>> unappliedRotationDegrees is " + unappliedRotationDegrees + ">>> pixelWidthHeightRatio is " + pixelWidthHeightRatio);
-                }
-
-                @Override
-                public void onSurfaceSizeChanged(int width, int height) {
-                    Log.d("ccc", "onSurfaceSizeChanged>>> width is " + width + ">>> height is " + height);
-                }
-
-                @Override
-                public void onRenderedFirstFrame() {
-                    Log.d("ccc","render first frame");
-                }
-            });
             player.setPlayWhenReady(startAutoPlay);
             player.addAnalyticsListener(new EventLogger(trackSelector));
             playerView.setPlayer(player);
             playerView.setPlaybackPreparer(this);
-            playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIXED_HEIGHT);
             debugViewHelper = new DebugTextViewHelper(player, debugTextView);
             debugViewHelper.start();
 
@@ -640,7 +603,7 @@ public class PlayerActivity extends Activity
                 Constructor<? extends AdsLoader> loaderConstructor =
                         loaderClass
                                 .asSubclass(AdsLoader.class)
-                                .getConstructor(android.content.Context.class, android.net.Uri.class);
+                                .getConstructor(android.content.Context.class, Uri.class);
                 // LINT.ThenChange(../../../../../../../../proguard-rules.txt)
                 adsLoader = loaderConstructor.newInstance(this, adTagUri);
             }
@@ -649,7 +612,7 @@ public class PlayerActivity extends Activity
                     new AdsMediaSource.MediaSourceFactory() {
                         @Override
                         public MediaSource createMediaSource(Uri uri) {
-                            return PlayerActivity.this.buildMediaSource(uri);
+                            return PlayerActivityUntouched.this.buildMediaSource(uri);
                         }
 
                         @Override
@@ -700,7 +663,7 @@ public class PlayerActivity extends Activity
                 button.setText(label);
                 button.setTag(i);
                 button.setOnClickListener(this);
-//                debugRootView.addView(button);
+                debugRootView.addView(button);
             }
         }
     }
