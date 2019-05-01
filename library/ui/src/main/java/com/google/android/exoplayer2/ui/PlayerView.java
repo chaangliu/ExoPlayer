@@ -598,6 +598,11 @@ public class PlayerView extends FrameLayout implements AdsLoader.AdViewProvider 
     contentFrame.setResizeMode(resizeMode);
   }
 
+  public void setCropRatio(double cropRatio) {
+    Assertions.checkState(contentFrame != null);
+    contentFrame.setCropRatio(cropRatio);
+  }
+
   /** Returns the {@link ResizeMode}. */
   public @ResizeMode int getResizeMode() {
     Assertions.checkState(contentFrame != null);

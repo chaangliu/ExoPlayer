@@ -19,7 +19,10 @@
         android:id="@id/exo_content_frame"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_gravity="center">
+        android:layout_gravity="center_horizontal"
+        android:background="#ff0000"
+        android:paddingTop="0dp">
+        <!--android:layout_gravity="center"-->
 
         <!-- Video surface will be inserted as the first child of the content frame. -->
 

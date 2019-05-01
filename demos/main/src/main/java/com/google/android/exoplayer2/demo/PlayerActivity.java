@@ -478,7 +478,8 @@ public class PlayerActivity extends Activity
             player.addAnalyticsListener(new EventLogger(trackSelector));
             playerView.setPlayer(player);
             playerView.setPlaybackPreparer(this);
-            playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIXED_HEIGHT);
+            playerView.setCropRatio(0.2);
+            playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_ADDITIONAL_ZOOM);
             debugViewHelper = new DebugTextViewHelper(player, debugTextView);
             debugViewHelper.start();
 

@@ -58,7 +58,8 @@ public final class AspectRatioFrameLayout extends FrameLayout {
     RESIZE_MODE_FIXED_WIDTH,
     RESIZE_MODE_FIXED_HEIGHT,
     RESIZE_MODE_FILL,
-    RESIZE_MODE_ZOOM
+    RESIZE_MODE_ZOOM,
+    RESIZE_MODE_ADDITIONAL_ZOOM
   })
   public @interface ResizeMode {}
 
@@ -82,6 +83,10 @@ public final class AspectRatioFrameLayout extends FrameLayout {
    * Either the width or height is increased to obtain the desired aspect ratio.
    */
   public static final int RESIZE_MODE_ZOOM = 4;
+  /**
+   * Based on MODE_ZOOM, increase eht width or height for a bigger percentages. 放大视频到指定限度。
+   */
+  public static final int RESIZE_MODE_ADDITIONAL_ZOOM = 5;
   // LINT.ThenChange(../../../../../../res/values/attrs.xml)
 
   /**
@@ -101,6 +106,15 @@ public final class AspectRatioFrameLayout extends FrameLayout {
 
   private float videoAspectRatio;
   private @ResizeMode int resizeMode;
+
+  /**
+    * 裁掉的部分（比如字幕）占视频高度的百分比
+    */
+  private double cropRatio = 0.2;
+  /**
+   * 是否拉伸到精确的cropRatio比例
+   */
+  private boolean keepExact = true;
 
   public AspectRatioFrameLayout(Context context) {
     this(context, null);
@@ -131,6 +145,10 @@ public final class AspectRatioFrameLayout extends FrameLayout {
       this.videoAspectRatio = widthHeightRatio;
       requestLayout();
     }
+  }
+
+  public void setCropRatio(double ratio){
+    cropRatio = ratio >= 0 && ratio < 1 ? ratio : 0.2;
   }
 
   /**
@@ -170,35 +188,65 @@ public final class AspectRatioFrameLayout extends FrameLayout {
     int width = getMeasuredWidth();
     int height = getMeasuredHeight();
     float viewAspectRatio = (float) width / height;
+    // aspectDeformation < 0 代表视频的宽高比 < FrameLayout宽高比
     float aspectDeformation = videoAspectRatio / viewAspectRatio - 1;
-    if (Math.abs(aspectDeformation) <= MAX_ASPECT_RATIO_DEFORMATION_FRACTION) {
-      // We're within the allowed tolerance.
-      aspectRatioUpdateDispatcher.scheduleUpdate(videoAspectRatio, viewAspectRatio, false);
-      return;
-    }
+//    if (Math.abs(aspectDeformation) <= MAX_ASPECT_RATIO_DEFORMATION_FRACTION) {
+//      // We're within the allowed tolerance.
+//      aspectRatioUpdateDispatcher.scheduleUpdate(videoAspectRatio, viewAspectRatio, false);
+//      return;
+//    }
 
+    // 这里改变的是frameLayout的width和height，而PlayerView是match_parent的，会随着frameLayout的尺寸而变化(*这里的理解可能有误，并不是PlayerView随着FrameLayout变化，而是可播放区域在变)
     switch (resizeMode) {
       case RESIZE_MODE_FIXED_WIDTH:
         height = (int) (width / videoAspectRatio);
         break;
       case RESIZE_MODE_FIXED_HEIGHT:
+        // 视频的height随着view的height走，宽度重新计算，可能increase或者decrease；
+        // viewWidth/viewHeight = videoWidth/videoHeight =>viewWidth/videoWidth = viewHeight/videoHeight；也就是viewWidth在
         width = (int) (height * videoAspectRatio);
+//        height =  height * 2;
         break;
-      case RESIZE_MODE_ZOOM:
+      case RESIZE_MODE_ZOOM://frameLayout的宽或高增加
+        // 视频的宽高比 > FrameLayout宽高比。比如2:1超宽屏。为了保持比例，width需要增加，大于屏幕宽度。
         if (aspectDeformation > 0) {
           width = (int) (height * videoAspectRatio);
         } else {
           height = (int) (width / videoAspectRatio);
         }
         break;
-      case RESIZE_MODE_FIT:
+      case RESIZE_MODE_FIT: //frameLayout的宽或高减小; 注意此时PlayerView会保持初始尺寸(但是内容的部分会fit FrameLayout)
         if (aspectDeformation > 0) {
           height = (int) (width / videoAspectRatio);
         } else {
           width = (int) (height * videoAspectRatio);
         }
+      case RESIZE_MODE_ADDITIONAL_ZOOM: //裁掉底边，默认裁掉高度的1/4。首先肯定是基于ZOOM，
+          // 视频的宽高比 >= FrameLayout宽高比。比如2:1超宽屏。为了保持比例，height先增加，然后width增加，大于屏幕宽度。
+          if (aspectDeformation >= 0) {
+              height = (int)(height * (1 + cropRatio));
+              width = (int) (height * videoAspectRatio);
+          } else {
+              // 比如4:3的视频，width会随着frameLayout增加，那么高度也需要增加以便保持比例（否则就扁了）；
+              // 对于4:3(16:12)的视频，扩大到16:9的时候，底部默认有(12-9)/12 = 0.25看不见，已经超出了0.2的默认条件（要问一下产品，此时是否要改为缩小宽度，取消满屏）
+              // 对于16:10的视频，扩大到16:10的时候，底部有1/12看不见，不足0.2，需要继续扩大高度
+              int newHeight = (int) (width / videoAspectRatio);
+              if ((newHeight - height)/height < cropRatio){
+                  if(keepExact){
+                    height = (int)(height *(1+ cropRatio));
+                    width = (int) (height * videoAspectRatio);
+                  }else {
+                    height = (int) (width / videoAspectRatio);
+                  }
+              }else {
+//                if (keepExact){
+//                  width =
+//                }
+                  height = newHeight;
+              }
+          }
         break;
-      case RESIZE_MODE_FILL:
+      case RESIZE_MODE_FILL://什么也不做，那么可播放区域跟随FrameLayout的Width和Height
       default:
         // Ignore target aspect ratio
         break;
