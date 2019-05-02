@@ -22,14 +22,23 @@
     android:keepScreenOn="true">
 
     <!--app:controller_layout_id="@layout/small_video_exo_playback_control_view"-->
+    <!--app:controller_layout_id="@layout/small_video_exo_playback_control_view_compact"-->
     <com.google.android.exoplayer2.ui.PlayerView
         android:id="@+id/player_view"
         app:player_layout_id="@layout/small_video_exo_player_view"
-        app:controller_layout_id="@layout/small_video_exo_playback_control_view"
+
         android:layout_width="match_parent"
         android:background="@android:color/holo_blue_dark"
         app:shutter_background_color="@android:color/holo_green_dark"
         android:layout_height="match_parent" />
+
+    <ProgressBar
+        android:id="@+id/determinateBar"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="10dp"
+        android:progress="25"/>
 
     <LinearLayout
         android:layout_width="match_parent"

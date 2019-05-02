@@ -21,6 +21,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.DisplayMetrics;
@@ -32,6 +33,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -140,6 +142,7 @@ public class PlayerActivity extends Activity
     }
 
     private PlayerView playerView;
+    private PlayerView playerViewCompact;
     private LinearLayout debugRootView;
     private TextView debugTextView;
 
@@ -185,6 +188,7 @@ public class PlayerActivity extends Activity
         playerView.setControllerVisibilityListener(this);
         playerView.setErrorMessageProvider(new PlayerErrorMessageProvider());
         playerView.requestFocus();
+        ProgressBar progressBar = (ProgressBar)findViewById(R.id.determinateBar);
         if (sphericalStereoMode != null) {
             int stereoMode;
             if (SPHERICAL_STEREO_MODE_MONO.equals(sphericalStereoMode)) {
@@ -226,6 +230,14 @@ public class PlayerActivity extends Activity
 //        });
 
         playerView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (screenWidth / 16 * 9)));
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                progressBar.setProgress((int) ((player.getCurrentPosition() * 100) / player.getDuration()));
+                handler.postDelayed(this, 1000);
+            }
+        }, 0);
     }
 
     @Override
@@ -471,15 +483,17 @@ public class PlayerActivity extends Activity
 
                 @Override
                 public void onRenderedFirstFrame() {
-                    Log.d("ccc","render first frame");
+                    Log.d("ccc", "render first frame");
                 }
             });
             player.setPlayWhenReady(startAutoPlay);
+            player.getCurrentPosition();
             player.addAnalyticsListener(new EventLogger(trackSelector));
             playerView.setPlayer(player);
             playerView.setPlaybackPreparer(this);
-            playerView.setCropRatio(0.2);
+            playerView.setCropRatio(0.3);
             playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_ADDITIONAL_ZOOM);
+            playerView.setControllerShowTimeoutMs(-1);
             debugViewHelper = new DebugTextViewHelper(player, debugTextView);
             debugViewHelper.start();
 
